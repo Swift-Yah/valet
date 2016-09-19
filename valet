@@ -44,9 +44,24 @@ then
         fi
     done
 
+    COMMAND=$(php "$DIR/cli/valet.php" secured $HOST)
+    NAME="$HOST.$DOMAIN"
+    KEY_FILE="$HOME/.valet/Certificates/$NAME.key"
+    CRT_FILE="$HOME/.valet/Certificates/$NAME.crt"
+
+    if [ -n "$COMMAND" ]; then
+        echo "$(tput setaf 3)To use TLS tunnels: ngrok authtoken <YOUR_PRO_AUTHTOKEN>"
+        echo "To disable TLS tunnels: valet unsecure ${HOST}$(tput sgr0)"
+
+        COMMAND="tls -crt $CRT_FILE -hostname $NAME -key $KEY_FILE 80"
+    else
+        COMMAND="http $NAME:80 -host-header=rewrite ${*:2}"
+    fi
+
     # Fetch Ngrok URL In Background...
     bash "$DIR/cli/scripts/fetch-share-url.sh" &
-    sudo -u $(logname) "$DIR/bin/ngrok" http "$HOST.$DOMAIN:80" -host-header=rewrite ${*:2}
+    sudo -u $(logname) "$DIR/bin/ngrok" $COMMAND
+
     exit
 
 # Finally, for every other command we will just proxy into the PHP tool
